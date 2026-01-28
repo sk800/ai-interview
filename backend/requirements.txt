@@ -1,28 +1,40 @@
+# Core FastAPI and web framework
 fastapi
 uvicorn[standard]
 python-multipart
+httpx
+aiofiles
+
+# Authentication and security
 python-jose[cryptography]
 passlib[bcrypt]
 bcrypt
+
+# Database
 sqlalchemy
 pydantic
 pydantic-settings
 email-validator
-openai
-openai-whisper
-opencv-python
-numpy
-Pillow
-httpx
-aiofiles
-python-dotenv
-azure-cognitiveservices-speech
+
+# Azure Face API - Facial Recognition and Monitoring
 azure-cognitiveservices-vision-face
 msrest
-scikit-learn
-torch
-torchvision
+
+# Azure Speech Services - Audio processing
+azure-cognitiveservices-speech
+
+# Image processing for face detection
+Pillow
+opencv-python
+numpy
+
+# Audio processing
 librosa
 soundfile
-azure-cognitiveservices-vision-face
+
+# LLM and AI services
+openai
+
+# Environment variables
+python-dotenv
 

@@ -216,6 +216,18 @@ export default function InterviewPage() {
         if (result.data.terminated) {
           handleTerminate()
         }
+      } else {
+        // Verification successful
+        if (result.data.alert_reset) {
+          // Alert count was reset - show success message
+          setAlertCount(0)
+          toast.success('Verification successful - Alert count reset!')
+        } else {
+          // Update alert count if provided (should be 0 if no alerts)
+          if (result.data.alert_count !== undefined) {
+            setAlertCount(result.data.alert_count)
+          }
+        }
       }
     } catch (error: any) {
       console.error('Verification error:', error)
@@ -532,7 +544,7 @@ export default function InterviewPage() {
               color: '#721c24',
               marginBottom: '1rem'
             }}>
-              ⚠️ Warning: {alertCount}/3 violations detected
+              ⚠️ Warning: {alertCount}/5 violations detected
             </div>
           )}
           <p style={{ fontSize: '1.1rem', lineHeight: '1.6', marginBottom: '1rem' }}>

@@ -100,9 +100,34 @@ async def upload_samples(
         # Save photo sample
         photo_path = f"samples/{current_user.id}_photo.jpg"
         os.makedirs("samples", exist_ok=True)
-        with open(photo_path, "wb") as f:
-            content = await photo.read()
-            f.write(content)
+        content = await photo.read()
+        
+        # Validate image content
+        if not content or len(content) == 0:
+            raise HTTPException(status_code=400, detail="Photo file is empty. Please upload a valid image.")
+        
+        # Check if it's a valid image by checking file signature
+        if not content.startswith(b'\xff\xd8\xff'):  # JPEG signature
+            # Try to convert if it's a different format
+            try:
+                from PIL import Image
+                import io
+                img = Image.open(io.BytesIO(content))
+                # Convert to RGB if needed (handles RGBA, etc.)
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+                # Save as JPEG
+                img.save(photo_path, 'JPEG', quality=95)
+                print(f"Converted image to JPEG format: {photo_path}")
+            except Exception as img_error:
+                print(f"Error converting image: {str(img_error)}")
+                raise HTTPException(status_code=400, detail=f"Invalid image format. Please upload a JPEG, PNG, or other common image format. Error: {str(img_error)}")
+        else:
+            # Valid JPEG, save directly
+            with open(photo_path, "wb") as f:
+                f.write(content)
+        
+        print(f"Photo saved: {photo_path}, size: {len(content)} bytes")
         
         # Save audio sample
         audio_path = f"samples/{current_user.id}_audio.webm"
@@ -111,8 +136,29 @@ async def upload_samples(
             f.write(content)
         
         # Process samples for face and audio recognition
+        print(f"Processing face sample for user {current_user.id}...")
         face_id = await face_service.process_sample(photo_path)
         audio_reference = await audio_service.process_sample(audio_path)  # Store audio path for verification
+        
+        if not face_id:
+            # Check if Azure Face API is available
+            if not face_service._is_available():
+                error_detail = (
+                    "Azure Face API is not configured or unavailable. "
+                    "Please check your AZURE_FACE_ENDPOINT and AZURE_FACE_KEY in .env file."
+                )
+            else:
+                # Provide more helpful error message
+                error_detail = (
+                    "No face detected in the photo. Please ensure:\n"
+                    "- Your face is clearly visible and centered\n"
+                    "- Good lighting (not too dark or too bright)\n"
+                    "- Face is not too small or too large in the frame\n"
+                    "- No obstructions (glasses, masks, hands) covering your face\n"
+                    "- Try taking the photo again with better conditions\n\n"
+                    "Check backend logs for detailed Azure Face API error messages."
+                )
+            raise HTTPException(status_code=400, detail=error_detail)
         
         # Store in database
         # Note: face_encoding field stores the Azure Face ID (as string) instead of encoding array
@@ -121,13 +167,16 @@ async def upload_samples(
             user_id=current_user.id,
             video_path=photo_path,  # Store photo path in video_path field for compatibility
             audio_path=audio_path,
-            face_encoding=face_id if face_id else None,  # Store Azure Face ID as string
+            face_encoding=face_id,  # Store Azure Face ID as string (required)
             audio_features=audio_reference if audio_reference else None  # Store audio path for verification
         )
         db.add(sample)
         db.commit()
+        db.refresh(sample)
         
-        return {"message": "Samples uploaded successfully", "sample_id": sample.id}
+        print(f"Sample stored successfully. Face ID: {face_id}, Sample ID: {sample.id}")
+        
+        return {"message": "Samples uploaded successfully", "sample_id": sample.id, "face_id": face_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error processing samples: {str(e)}")
 
@@ -317,17 +366,28 @@ async def verify_user(
         f.write(content)
     
     # Verify face - returns (is_match, reason)
-    face_match, face_reason = await face_service.verify_face(snapshot_path, sample.face_encoding)
+    # Get stored face ID - try to get it from sample, or re-process the stored photo if needed
+    stored_face_id = sample.face_encoding
     
-    # Track consecutive face failures
-    # Only count actual violations: no_face or different_face
+    # If no face ID stored, try to extract it from the stored photo
+    if not stored_face_id and sample.video_path and os.path.exists(sample.video_path):
+        print("No face ID in database, attempting to extract from stored photo...")
+        stored_face_id = await face_service.process_sample(sample.video_path)
+        if stored_face_id:
+            # Update the sample with the extracted face ID
+            sample.face_encoding = stored_face_id
+            db.commit()
+            print(f"Extracted and stored face ID: {stored_face_id}")
+    
+    face_match, face_reason = await face_service.verify_face(snapshot_path, stored_face_id)
+    
+    # Check for face violations - send alert immediately on first failure
     is_face_violation = face_reason in ["no_face", "different_face"]
     
     if is_face_violation:
-        interview.consecutive_face_failures = (interview.consecutive_face_failures or 0) + 1
+        print(f"Face violation detected: {face_reason}")
     else:
-        # Reset counter on successful verification
-        interview.consecutive_face_failures = 0
+        print(f"Face verification passed: {face_reason}")
     
     # Verify audio - compare with stored audio sample (captured before interview)
     audio_match = True
@@ -354,14 +414,14 @@ async def verify_user(
     except Exception as e:
         print(f"Error cleaning up temp files: {str(e)}")
     
-    # Only alert on actual violations:
-    # - Face: 3 consecutive failures (no face or different face)
-    # - Audio: mismatch
+    # Alert immediately on first violation (no need to wait for consecutive failures)
+    # - Face: immediate alert on no_face or different_face
+    # - Audio: immediate alert on mismatch
     violation_type = None
     should_alert = False
     
-    # Face violation: only if 3 consecutive failures
-    if interview.consecutive_face_failures >= 3:
+    # Face violation: send alert immediately on first failure
+    if is_face_violation:
         violation_type = "face_violation"
         should_alert = True
     # Audio violation: immediate alert
@@ -373,10 +433,10 @@ async def verify_user(
         interview.alert_count = (interview.alert_count or 0) + 1
         db.commit()
         
-        # Terminate after 3 alerts (changed from 2)
-        if interview.alert_count >= 3:
+        # Terminate after 5 alerts
+        if interview.alert_count >= 5:
             interview.status = "terminated"
-            interview.termination_reason = violation_type  # Store termination reason
+            interview.termination_reason = violation_type
             db.commit()
             return {
                 "verified": False,
@@ -384,7 +444,7 @@ async def verify_user(
                 "terminated": True,
                 "violation_type": violation_type,
                 "alert_count": interview.alert_count,
-                "message": f"Interview terminated due to {violation_type.replace('_', ' ')} (3 alerts)"
+                "message": f"Interview terminated after {interview.alert_count} violations: {violation_type.replace('_', ' ')}"
             }
         
         return {
@@ -392,10 +452,25 @@ async def verify_user(
             "alert": True,
             "alert_count": interview.alert_count,
             "violation_type": violation_type,
-            "message": f"Identity verification failed: {violation_type.replace('_', ' ')} ({interview.alert_count}/3 alerts)"
+            "message": f"Identity verification failed: {violation_type.replace('_', ' ')} (Alert {interview.alert_count}/5)"
         }
     
-    return {"verified": True, "alert": False}
+    # If no violation and face matches successfully, reset alert count
+    # This gives the user a chance to recover from previous violations
+    if not is_face_violation and audio_match and interview.alert_count > 0:
+        print(f"Face verification successful - resetting alert count from {interview.alert_count} to 0")
+        interview.alert_count = 0
+        db.commit()
+        return {
+            "verified": True,
+            "alert": False,
+            "alert_count": 0,
+            "alert_reset": True,
+            "message": "Verification successful - alert count reset"
+        }
+    
+    # If no violation, verification is successful
+    return {"verified": True, "alert": False, "alert_count": interview.alert_count or 0}
 
 @app.get("/api/interviews/{interview_id}/summary")
 async def get_summary(
