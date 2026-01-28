@@ -1,0 +1,189 @@
+{
+  "ai": [
+    {
+      "question": "What is machine learning and how does it differ from traditional programming?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "easy"
+    },
+    {
+      "question": "Explain the difference between supervised and unsupervised learning with examples.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "easy"
+    },
+    {
+      "question": "What are neural networks and how do they learn?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "Describe overfitting and how to prevent it in machine learning models.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "What is the bias-variance tradeoff in machine learning?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "Explain gradient descent and its variants.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "What are transformers and how have they revolutionized NLP?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "Describe the architecture of a convolutional neural network.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "What is reinforcement learning and provide a real-world application example.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "hard"
+    },
+    {
+      "question": "How would you handle imbalanced datasets in a classification problem?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "hard"
+    }
+  ],
+  "react": [
+    {
+      "question": "What is React and what are its main advantages?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "easy"
+    },
+    {
+      "question": "Explain the difference between functional and class components in React.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "easy"
+    },
+    {
+      "question": "What are React Hooks and why were they introduced?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "easy"
+    },
+    {
+      "question": "Explain the React component lifecycle and how hooks replicate it.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "What is state management in React and when would you use Redux?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "How does React handle performance optimization? Explain memoization techniques.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "What is the Virtual DOM and how does it improve performance?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "Explain React Context API and when to use it vs props drilling.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "How would you implement code splitting and lazy loading in a React application?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "hard"
+    },
+    {
+      "question": "Describe how you would test a React component and what testing strategies you'd use.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "hard"
+    }
+  ],
+  "java": [
+    {
+      "question": "What is Java and what are its key features?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "easy"
+    },
+    {
+      "question": "Explain the difference between JDK, JRE, and JVM.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "easy"
+    },
+    {
+      "question": "What is object-oriented programming and how does Java implement it?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "easy"
+    },
+    {
+      "question": "Explain the difference between abstract classes and interfaces in Java.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "What are Java collections and explain the differences between List, Set, and Map.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "How does Java handle multithreading and what are the synchronization mechanisms?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "Explain Java memory management and garbage collection.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "What are Java streams and how do they differ from traditional collections?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "medium"
+    },
+    {
+      "question": "How would you design a thread-safe singleton pattern in Java?",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "hard"
+    },
+    {
+      "question": "Explain Java's exception handling mechanism and best practices.",
+      "type": "text",
+      "time_limit": 300,
+      "difficulty": "hard"
+    }
+  ]
+}
+
