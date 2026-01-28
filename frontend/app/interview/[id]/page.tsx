@@ -545,6 +545,11 @@ export default function InterviewPage() {
               marginBottom: '1rem'
             }}>
               ⚠️ Warning: {alertCount}/5 violations detected
+              {alertCount >= 4 && (
+                <div style={{ marginTop: '0.5rem', fontSize: '0.9rem', fontWeight: 'bold' }}>
+                  One more violation will terminate the interview!
+                </div>
+              )}
             </div>
           )}
           <p style={{ fontSize: '1.1rem', lineHeight: '1.6', marginBottom: '1rem' }}>
