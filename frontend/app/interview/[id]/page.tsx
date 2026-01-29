@@ -234,6 +234,18 @@ export default function InterviewPage() {
     }
   }
 
+  const playQuestionAudio = (audioUrl: string) => {
+    try {
+      const audio = new Audio(`${process.env.NEXT_PUBLIC_API_URL}${audioUrl}`)
+      audio.play().catch((error) => {
+        console.error('Error playing question audio:', error)
+        toast.error('Could not play question audio')
+      })
+    } catch (error) {
+      console.error('Error creating audio element:', error)
+    }
+  }
+
   const loadQuestion = async () => {
     try {
       const response = await axios.get(
@@ -263,10 +275,14 @@ export default function InterviewPage() {
       setInterimTranscript('')
       setIsSpeechComplete(false)
       
-      // Set random answer mode (speaking or writing)
-      const modes: ('speaking' | 'writing')[] = ['speaking', 'writing']
-      const randomMode = modes[Math.floor(Math.random() * modes.length)]
-      setAnswerMode(randomMode)
+      // Use answer_mode from backend response
+      const answerMode = response.data.answer_mode || 'writing'
+      setAnswerMode(answerMode)
+      
+      // If answer mode is speaking, play the question audio
+      if (answerMode === 'speaking' && response.data.question_audio_url) {
+        playQuestionAudio(response.data.question_audio_url)
+      }
       
       // Stop any ongoing speech recognition
       if (recognitionRef.current && isListening) {

@@ -40,6 +40,38 @@ class AudioService:
         """Check if Azure Speech Services is available"""
         return AZURE_SPEECH_AVAILABLE and self.speech_config is not None
     
+    async def text_to_speech(self, text: str) -> Optional[bytes]:
+        """Convert text to speech using Azure Speech Services"""
+        if not self._is_available():
+            print("Warning: Azure Speech Services not available for TTS")
+            return None
+        
+        try:
+            # Configure speech synthesis
+            synthesizer = speechsdk.SpeechSynthesizer(speech_config=self.speech_config)
+            
+            # Synthesize speech
+            result = synthesizer.speak_text_async(text).get()
+            
+            if result.reason == speechsdk.ResultReason.SynthesizingAudioCompleted:
+                # Return audio data as bytes
+                audio_data = result.audio_data
+                print(f"TTS: Successfully synthesized {len(audio_data)} bytes of audio")
+                return audio_data
+            elif result.reason == speechsdk.ResultReason.Canceled:
+                cancellation = speechsdk.CancellationDetails(result)
+                print(f"TTS canceled: {cancellation.reason}")
+                if cancellation.reason == speechsdk.CancellationReason.Error:
+                    print(f"TTS error: {cancellation.error_details}")
+                return None
+            else:
+                print(f"TTS failed: {result.reason}")
+                return None
+                
+        except Exception as e:
+            print(f"Error in text-to-speech: {str(e)}")
+            return None
+    
     async def process_sample(self, audio_path: str) -> Optional[str]:
         """Process audio sample - returns the audio file path for later verification"""
         try:

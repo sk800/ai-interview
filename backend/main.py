@@ -250,6 +250,22 @@ async def get_question(
     import random
     answer_mode = random.choice(["speaking", "writing"])
     
+    # Generate TTS audio for the question if answer mode is speaking
+    question_audio_url = None
+    if answer_mode == "speaking":
+        # Create TTS audio for the question
+        audio_data = await audio_service.text_to_speech(db_question.question_text)
+        if audio_data:
+            # Save audio to a temporary file
+            import uuid
+            audio_filename = f"question_audio_{db_question.id}_{uuid.uuid4().hex[:8]}.wav"
+            audio_path = f"temp/{audio_filename}"
+            os.makedirs("temp", exist_ok=True)
+            with open(audio_path, "wb") as f:
+                f.write(audio_data)
+            # Return URL path for the audio
+            question_audio_url = f"/api/interviews/{interview_id}/question-audio/{audio_filename}"
+    
     return {
         "question_id": db_question.id,
         "question": db_question.question_text,
@@ -257,7 +273,8 @@ async def get_question(
         "time_limit": db_question.time_limit,
         "question_number": answered_count + 1,
         "total_questions": 10,
-        "answer_mode": answer_mode
+        "answer_mode": answer_mode,
+        "question_audio_url": question_audio_url
     }
 
 @app.post("/api/interviews/{interview_id}/answer")
@@ -471,6 +488,30 @@ async def verify_user(
     
     # If no violation, verification is successful
     return {"verified": True, "alert": False, "alert_count": interview.alert_count or 0}
+
+@app.get("/api/interviews/{interview_id}/question-audio/{audio_filename}")
+async def get_question_audio(
+    interview_id: int,
+    audio_filename: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    """Get question audio file for TTS"""
+    # Verify interview belongs to user
+    interview = db.query(Interview).filter(Interview.id == interview_id, Interview.user_id == current_user.id).first()
+    if not interview:
+        raise HTTPException(status_code=404, detail="Interview not found")
+    
+    audio_path = f"temp/{audio_filename}"
+    if not os.path.exists(audio_path):
+        raise HTTPException(status_code=404, detail="Audio file not found")
+    
+    from fastapi.responses import FileResponse
+    return FileResponse(
+        audio_path,
+        media_type="audio/wav",
+        filename=audio_filename
+    )
 
 @app.get("/api/interviews/{interview_id}/summary")
 async def get_summary(
